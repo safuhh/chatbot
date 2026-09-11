@@ -194,10 +194,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                               if (onDeleteChat) onDeleteChat(item.id);
                               setConfirmDeleteId(null);
                             }}
-                            className="p-1 rounded bg-red-500 hover:bg-red-600 text-white transition-colors"
+                            className="p-1.5 sm:p-1 rounded bg-red-500 hover:bg-red-600 text-white transition-colors"
                             title="Confirm delete"
                           >
-                            <Check className="w-3 h-3" />
+                            <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                           </button>
                           <button
                             type="button"
@@ -205,10 +205,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                               e.stopPropagation();
                               setConfirmDeleteId(null);
                             }}
-                            className="p-1 rounded bg-[#8A7E6C]/20 hover:bg-[#8A7E6C]/40 text-[#1A1A1A] dark:text-[#EDE8E1] transition-colors"
+                            className="p-1.5 sm:p-1 rounded bg-[#8A7E6C]/20 hover:bg-[#8A7E6C]/40 text-[#1A1A1A] dark:text-[#EDE8E1] transition-colors"
                             title="Cancel"
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                           </button>
                         </div>
                       ) : (
@@ -219,9 +219,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                             setConfirmDeleteId(item.id);
                           }}
                           className={cn(
-                            "p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity shrink-0",
+                            "p-1.5 sm:p-1 rounded transition-opacity shrink-0",
+                            "opacity-100 md:opacity-0 md:group-hover:opacity-100",
                             "text-[#8A7E6C] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30",
-                            isActive && "opacity-100"
+                            isActive && "opacity-100 text-red-500/80"
                           )}
                           title="Delete conversation"
                         >
