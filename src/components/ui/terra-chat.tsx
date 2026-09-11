@@ -9,6 +9,8 @@ import { ChatHeader } from "../chat/ChatHeader";
 import { ChatEmptyState } from "../chat/ChatEmptyState";
 import { ChatMessageList } from "../chat/ChatMessageList";
 import { ChatComposer } from "../chat/ChatComposer";
+import { VoiceModeOverlay } from "../chat/VoiceModeOverlay";
+import { useVoiceMode } from "@/hooks/useVoiceMode";
 
 export type { ChatMessage, ChatHistoryItem, TerraChatProps, Attachment };
 
@@ -31,6 +33,7 @@ export default function TerraChatUI({
   isTemporaryMode = false,
   onToggleTemporaryMode,
   onDeleteChat,
+  onOpenVoiceMode: externalOpenVoiceMode,
 }: TerraChatProps) {
   // ── Chat State
   const [internalMessages, setInternalMessages] = useState<ChatMessage[]>([]);
@@ -90,7 +93,7 @@ export default function TerraChatUI({
     }
   };
 
-  const handleSend = (customAttachments?: Attachment[]) => {
+  const handleSend = useCallback((customAttachments?: Attachment[]) => {
     if ((!inputMessage.trim() && (!customAttachments || customAttachments.length === 0)) || isGenerating) return;
     const userText = inputMessage.trim();
     setInputMessage("");
@@ -122,7 +125,34 @@ export default function TerraChatUI({
         },
       ]);
     }
-  };
+  }, [inputMessage, isGenerating, onSendMessage, internalMessages.length, activeChatId]);
+
+  // Voice Mode integration
+  const voiceSendMessage = useCallback(
+    async (text: string) => {
+      if (onSendMessage) {
+        await onSendMessage(text);
+      }
+    },
+    [onSendMessage]
+  );
+
+  const voiceMode = useVoiceMode({
+    onSendMessage: voiceSendMessage,
+    isGenerating,
+  });
+
+  // Keep latest assistant response synced with voice mode for TTS playback
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.sender === "assistant" && lastMsg.content) {
+        voiceMode.setAiResponseText(lastMsg.content);
+      }
+    }
+  }, [messages, voiceMode]);
+
+  const handleOpenVoiceMode = externalOpenVoiceMode ?? voiceMode.startVoiceMode;
 
   // ── Auto-scroll
   useEffect(() => {
@@ -179,6 +209,7 @@ export default function TerraChatUI({
             setIsDark={setIsDark}
             isTemporaryMode={isTemporaryMode}
             onToggleTemporaryMode={onToggleTemporaryMode}
+            onOpenVoiceMode={handleOpenVoiceMode}
           />
         )}
 
@@ -210,6 +241,19 @@ export default function TerraChatUI({
           </>
         )}
       </div>
+
+      {/* ChatGPT-Style Voice Mode Overlay */}
+      <VoiceModeOverlay
+        isOpen={voiceMode.isOpen}
+        status={voiceMode.status}
+        userTranscript={voiceMode.userTranscript}
+        aiResponseText={voiceMode.aiResponseText}
+        error={voiceMode.error}
+        onClose={voiceMode.closeVoiceMode}
+        onSendSpeech={voiceMode.triggerSendUserSpeech}
+        onInterrupt={voiceMode.interruptSpeaking}
+      />
     </div>
   );
 }
+

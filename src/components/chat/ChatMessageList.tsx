@@ -8,10 +8,13 @@ import {
   FileCode,
   RotateCcw,
   AlertTriangle,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "./types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { useSpeechSynthesis } from "./useSpeechSynthesis";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
@@ -24,6 +27,13 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = React.memo(
   ({ messages, isGenerating, messagesEndRef, onRegenerate }) => {
     const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
     const [feedbackState, setFeedbackState] = useState<Record<string, "up" | "down" | null>>({});
+
+    const {
+      isSupported: isSpeechSynthesisSupported,
+      speakingMessageId,
+      speakMessage,
+      stopSpeaking,
+    } = useSpeechSynthesis();
 
     const handleCopyMessage = (id: string, text: string) => {
       navigator.clipboard.writeText(text);
@@ -53,6 +63,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = React.memo(
               msg.isError ||
               (msg.sender === "assistant" && msg.content.trim().startsWith("⚠️"));
 
+            const isSpeakingThis = speakingMessageId === msg.id;
             const delay = `${Math.min(index * 40, 240)}ms`;
 
             // ── User Message Turn ──────────────────────────────────────────
@@ -221,6 +232,37 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = React.memo(
                         </>
                       )}
                     </button>
+
+                    {/* Text-to-Speech Output Button (Web Speech API) */}
+                    {isSpeechSynthesisSupported && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isSpeakingThis ? stopSpeaking() : speakMessage(msg.id, msg.content)
+                        }
+                        className={cn(
+                          "flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all duration-150",
+                          isSpeakingThis
+                            ? "text-[#C4552F] bg-[#C4552F]/10 dark:text-[#E87A53] dark:bg-[#C4552F]/20 font-semibold"
+                            : "text-[#8A7E6C] hover:text-[#1A1A1A] hover:bg-[#F4ECE1] dark:text-[#6B6358] dark:hover:text-[#EDE8E1] dark:hover:bg-[#1E1A15]"
+                        )}
+                        title={isSpeakingThis ? "Stop speaking" : "Read response aloud"}
+                      >
+                        {isSpeakingThis ? (
+                          <>
+                            <VolumeX className="w-3.5 h-3.5 text-[#C4552F] dark:text-[#E87A53] animate-pulse" />
+                            <span className="text-[11px] text-[#C4552F] dark:text-[#E87A53]">
+                              Speaking...
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-3.5 h-3.5" />
+                            <span className="text-[11px] font-medium hidden sm:inline">Read</span>
+                          </>
+                        )}
+                      </button>
+                    )}
 
                     {/* Regenerate Button (available on assistant messages) */}
                     {onRegenerate && isLastAssistantMessage && !isGenerating && (

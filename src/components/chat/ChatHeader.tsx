@@ -6,6 +6,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Shield,
+  Headphones,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ interface ChatHeaderProps {
   setIsDark: (dark: boolean | ((prev: boolean) => boolean)) => void;
   isTemporaryMode?: boolean;
   onToggleTemporaryMode?: (enabled: boolean) => void;
+  onOpenVoiceMode?: () => void;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -27,6 +29,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   setIsDark,
   isTemporaryMode = false,
   onToggleTemporaryMode,
+  onOpenVoiceMode,
 }) => {
   return (
     <header
@@ -62,6 +65,22 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        {/* Voice Mode Button */}
+        {onOpenVoiceMode && (
+          <button
+            onClick={onOpenVoiceMode}
+            title="Start Voice-to-Voice Mode (ChatGPT style)"
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border",
+              "bg-[#C4552F]/10 hover:bg-[#C4552F]/20 text-[#C4552F] border-[#C4552F]/30",
+              "dark:bg-[#C4552F]/20 dark:hover:bg-[#C4552F]/30 dark:text-[#E07A5F] dark:border-[#C4552F]/40"
+            )}
+          >
+            <Headphones className="w-3.5 h-3.5 animate-pulse text-[#C4552F] dark:text-[#E07A5F]" />
+            <span className="hidden sm:inline">Voice Mode</span>
+          </button>
+        )}
+
         {/* Temporary Chat Toggle Button */}
         {onToggleTemporaryMode && (
           <button
@@ -97,3 +116,4 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     </header>
   );
 };
+

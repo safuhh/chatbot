@@ -54,4 +54,6 @@ export interface TerraChatProps {
   onToggleTemporaryMode?: (enabled: boolean) => void;
   /** Called when a user deletes a conversation from the sidebar */
   onDeleteChat?: (id: string) => Promise<void> | void;
+  /** Called to activate ChatGPT-style Voice-to-Voice mode */
+  onOpenVoiceMode?: () => void;
 }
