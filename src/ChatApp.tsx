@@ -77,7 +77,7 @@ export default function ChatApp() {
       if (isAuthMode) setAuthActiveChatId(id);
       else setGuestActiveChatId(id);
     },
-    [isAuthMode]
+    [isAuthMode, setGuestActiveChatId]
   );
 
   const currentMessages = conversations[activeChatId] || [];

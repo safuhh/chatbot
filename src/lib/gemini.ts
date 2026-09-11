@@ -19,16 +19,13 @@ const getApiKey = (): string => {
   );
 };
 
-const MODELS = [
-  "inclusionai/ling-3.0-flash-vl:free",
-  "google/gemini-2.0-flash-lite-001",
-  "meta-llama/llama-3.3-70b-instruct:free",
-];
 
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const SYSTEM_PROMPT =
   "You are Safvan AI, a helpful, intelligent, precise, and friendly general-purpose AI assistant. " +
+  "You were created by Safvan, a Software Developer from Palakkad, Mannarkkad, Kerala. " +
+  "When asked who created, built, developed, or made you, always reply: 'Safvan AI was created by Safvan, a Software Developer from Palakkad, Mannarkkad, Kerala.' " +
   "Answer user queries directly, accurately, and thoroughly. " +
   "Provide clean, well-formatted responses. " +
   "When asked about programming, provide working code snippets with explanations. " +
@@ -40,7 +37,20 @@ const SYSTEM_PROMPT =
 // keep token count low and reduce time-to-first-token.
 const MAX_HISTORY = 20;
 
-// ── Time / Date shortcut ──────────────────────────────────────────────────────
+// ── Creator / Time / Date shortcuts ──────────────────────────────────────────
+
+function detectCreatorQuery(prompt: string): string | null {
+  const lower = prompt.toLowerCase().trim();
+  const isCreator =
+    /\b(who\s+(created|built|developed|made|designed|owns)\s+(you|this\s+(bot|chatbot|ai|app))|who('s|\s+is)\s+(your\s+creator|behind\s+safvan\s+ai|the\s+creator)|tell\s+me\s+about\s+(the\s+creator|your\s+creator)|who\s+is\s+safvan)\b/i.test(
+      lower
+    );
+
+  if (isCreator) {
+    return "Safvan AI was created by **Safvan**, a Software Developer from Palakkad, Mannarkkad, Kerala.";
+  }
+  return null;
+}
 
 function detectTimeOrDateQuery(prompt: string): string | null {
   const lower = prompt.toLowerCase().trim();
@@ -197,12 +207,18 @@ async function* parseSSEStream(
   }
 }
 
+const MODEL_BATCHES = [
+  ["google/gemma-4-31b-it:free", "inclusionai/ling-3.0-flash-vl:free", "nex-agi/nex-n2.5-pro:free"],
+  ["nvidia/nemotron-3.5-lightning:free", "cohere/north-mini-code:free", "liquid/lfm-2.5-2.6b:free"],
+];
+
 // ── Main streaming function ───────────────────────────────────────────────────
 
 /**
  * Streams an OpenRouter AI response token-by-token.
  * Calls onChunk(accumulatedText) on each new token.
  * Returns the full response string when done.
+ * Uses 3-model fallback arrays supported natively by OpenRouter + client-side batch retries.
  *
  * @param chatHistory  Previous messages in this conversation.
  * @param userPrompt   The user's message.
@@ -217,7 +233,12 @@ export async function streamGeminiChat(
   attachments: Attachment[] = [],
   skipCache = false
 ): Promise<string> {
-  // 1. Local time / date — zero latency, no API call
+  // 1. Creator info / time / date shortcut — zero latency, no API call
+  const creatorInfo = detectCreatorQuery(userPrompt);
+  if (creatorInfo && attachments.length === 0) {
+    return streamTextChunked(creatorInfo, onChunk);
+  }
+
   const timeOrDate = detectTimeOrDateQuery(userPrompt);
   if (timeOrDate && attachments.length === 0) {
     return streamTextChunked(timeOrDate, onChunk);
@@ -227,7 +248,7 @@ export async function streamGeminiChat(
   const activeApiKey = getApiKey();
   if (!activeApiKey) {
     return streamTextChunked(
-      "I am currently unable to process requests. Please try again in a moment.",
+      "I am currently unable to process requests. Please configure `VITE_OPENROUTER_API_KEY` in `.env`.",
       onChunk
     );
   }
@@ -246,82 +267,100 @@ export async function streamGeminiChat(
     }
   }
 
-  // 4. Build request
+  // 4. Build request payload
   const messages = buildMessages(chatHistory, userPrompt, attachments);
 
-  // 5. Call OpenRouter with SSE streaming
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${activeApiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": window.location.origin,
-        "X-Title": "Safvan AI",
-      },
-      body: JSON.stringify({
-        models: MODELS,
-        messages,
-        stream: true,
-        temperature: 0.7,
-        max_tokens: 4096,
-      }),
-    });
+  // 5. Call OpenRouter with model batch fallback logic
+  let lastErrorMsg = "";
+  let isRateLimited = false;
 
-    if (!response.ok) {
-      const errBody = await response.text();
-      let errMsg: string;
-      try {
-        const json = JSON.parse(errBody) as { error?: { message?: string } };
-        errMsg = json.error?.message ?? errBody;
-      } catch {
-        errMsg = errBody;
+  for (const batch of MODEL_BATCHES) {
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${activeApiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "Safvan AI",
+        },
+        body: JSON.stringify({
+          models: batch,
+          messages,
+          stream: true,
+          temperature: 0.7,
+          max_tokens: 4096,
+        }),
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        let errMsg = errBody;
+        try {
+          const json = JSON.parse(errBody) as { error?: { message?: string } };
+          errMsg = json.error?.message ?? errBody;
+        } catch {
+          // ignore
+        }
+
+        if (
+          response.status === 429 ||
+          response.status === 404 ||
+          response.status === 503 ||
+          errMsg.includes("429") ||
+          errMsg.includes("404") ||
+          errMsg.includes("rate limit") ||
+          errMsg.includes("No endpoints found")
+        ) {
+          if (response.status === 429 || errMsg.includes("rate limit")) {
+            isRateLimited = true;
+          }
+          console.warn(
+            `[Safvan AI] OpenRouter batch (${batch.join(", ")}) returned ${response.status}. Trying next model batch...`
+          );
+          lastErrorMsg = errMsg;
+          continue; // Try next model batch
+        }
+
+        console.error(`[OpenRouter API Error] HTTP ${response.status}:`, errMsg);
+        lastErrorMsg = errMsg;
+        break;
       }
 
-      console.error(`[OpenRouter API Error] HTTP ${response.status}:`, errMsg);
-      return streamTextChunked(
-        "I ran into a temporary issue processing your message. Please try again in a moment.",
-        onChunk
-      );
+      if (!response.body) {
+        throw new Error("Response body is null");
+      }
+
+      // 6. Stream SSE tokens
+      let accumulatedText = "";
+      for await (const token of parseSSEStream(response.body)) {
+        accumulatedText += token;
+        onChunk(accumulatedText);
+      }
+
+      if (accumulatedText.trim()) {
+        if (cacheKey) setCached(cacheKey, accumulatedText);
+        return accumulatedText;
+      }
+    } catch (error: unknown) {
+      lastErrorMsg = error instanceof Error ? error.message : String(error);
+      console.warn(`[Safvan AI] Batch attempt error:`, lastErrorMsg);
     }
-
-    if (!response.body) {
-      throw new Error("Response body is null");
-    }
-
-    // 6. Stream SSE tokens
-    let accumulatedText = "";
-    for await (const token of parseSSEStream(response.body)) {
-      accumulatedText += token;
-      onChunk(accumulatedText);
-    }
-
-    if (accumulatedText.trim()) {
-      if (cacheKey) setCached(cacheKey, accumulatedText);
-      return accumulatedText;
-    }
-
-    return streamTextChunked(
-      "⚠️ The AI returned an empty response. Please try again.",
-      onChunk
-    );
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[Safvan AI] OpenRouter error:", message);
-
-    let errorMsg: string;
-    if (message.includes("429") || message.includes("rate limit") || message.includes("quota")) {
-      errorMsg = "⚠️ **Rate limit reached.** Please wait a moment and try again.";
-    } else if (message.includes("401") || message.includes("403") || message.includes("API key")) {
-      errorMsg = "⚠️ **Invalid API key.** Check `VITE_OPENROUTER_API_KEY` in your `.env` file.";
-    } else if (message.includes("fetch") || message.includes("network") || message.includes("Failed to fetch")) {
-      errorMsg = "⚠️ **Network error.** Check your internet connection and try again.";
-    } else {
-      errorMsg = `⚠️ **Safvan AI error:** ${message}`;
-    }
-
-    return streamTextChunked(errorMsg, onChunk);
   }
+
+  // 7. Error fallback display if all model attempts failed
+  let errorMsg: string;
+  if (isRateLimited || lastErrorMsg.includes("429") || lastErrorMsg.includes("rate limit")) {
+    errorMsg = "⚠️ **Rate limit reached.** All free tier AI models are currently busy. Please wait 10–15 seconds and try sending your message again.";
+  } else if (lastErrorMsg.includes("401") || lastErrorMsg.includes("403") || lastErrorMsg.includes("API key")) {
+    errorMsg = "⚠️ **Invalid API key.** Please check `VITE_OPENROUTER_API_KEY` in your `.env` file.";
+  } else if (lastErrorMsg.includes("fetch") || lastErrorMsg.includes("network")) {
+    errorMsg = "⚠️ **Network error.** Check your internet connection and try again.";
+  } else {
+    errorMsg = `⚠️ **Safvan AI error:** ${lastErrorMsg || "Unable to reach AI service."}`;
+  }
+
+  return streamTextChunked(errorMsg, onChunk);
 }
 
 // ── Simulated word-by-word streaming ─────────────────────────────────────────

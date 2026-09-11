@@ -31,10 +31,17 @@ export function useAuth(): UseAuthReturn {
 
   useEffect(() => {
     // Check existing session on mount (handles page refresh)
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setUser(data.session?.user ?? null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("[useAuth] getSession error:", err);
+        setUser(null);
+        setLoading(false);
+      });
 
     // Real-time listener for auth events: SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {

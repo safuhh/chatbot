@@ -75,13 +75,15 @@ export default function LoginPage() {
       const msg = err instanceof Error ? err.message : "Login failed. Please try again.";
       const status = typeof err === "object" && err !== null && "status" in err ? (err as { status?: number }).status : undefined;
 
-      // Make Supabase error messages user-friendly
+      // Make Supabase / API error messages user-friendly
       if (status === 429 || msg.includes("429") || msg.includes("Too many requests") || msg.includes("Too Many Requests") || msg.includes("rate limit") || msg.includes("security purposes")) {
         setError("Too many attempts. Please wait a moment and try again.");
       } else if (msg.includes("Invalid login credentials")) {
         setError("Incorrect email or password. Please try again.");
       } else if (msg.includes("Email not confirmed")) {
         setError("Please confirm your email address before logging in.");
+      } else if (status === 404 || msg.includes("404") || msg.includes("NOT_FOUND") || msg.includes("sbpgs") || msg.includes("Not Found")) {
+        setError("Authentication service is temporarily unavailable (404). Please try again or continue as Guest.");
       } else {
         setError(msg);
       }

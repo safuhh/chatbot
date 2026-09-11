@@ -101,6 +101,8 @@ export default function RegisterPage() {
         setError("Password is too weak. Please use at least 6 characters.");
       } else if (msg.includes("valid email")) {
         setError("Please enter a valid email address.");
+      } else if (msg.includes("404") || msg.includes("NOT_FOUND") || msg.includes("sbpgs") || msg.includes("Not Found")) {
+        setError("Registration service is temporarily unavailable (404). Please try again later.");
       } else {
         setError(msg);
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 import { ChatMessage, ChatHistoryItem, TerraChatProps, Attachment } from "../chat/types";
@@ -68,7 +68,7 @@ export default function TerraChatUI({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── Handlers
-  const handleNewConversation = () => {
+  const handleNewConversation = useCallback(() => {
     setInternalMessages([]);
     setInternalActiveChatId(Date.now().toString());
     if (onNewConversation) {
@@ -77,7 +77,7 @@ export default function TerraChatUI({
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       setSidebarOpen(false);
     }
-  };
+  }, [onNewConversation]);
 
   const handleSelectChat = (id: string) => {
     setInternalActiveChatId(id);
@@ -138,7 +138,7 @@ export default function TerraChatUI({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onNewConversation]);
+  }, [handleNewConversation]);
 
   const activeChat = chatHistory.find((item) => item.id === activeChatId);
 
