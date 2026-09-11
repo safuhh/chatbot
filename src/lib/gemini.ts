@@ -23,7 +23,6 @@ const MODELS = [
   "inclusionai/ling-3.0-flash-vl:free",
   "google/gemini-2.0-flash-lite-001",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "qwen/qwen-2.5-coder-32b-instruct:free",
 ];
 
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
