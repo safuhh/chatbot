@@ -208,8 +208,9 @@ async function* parseSSEStream(
 }
 
 const MODEL_BATCHES = [
-  ["google/gemma-4-31b-it:free", "inclusionai/ling-3.0-flash-vl:free", "nex-agi/nex-n2.5-pro:free"],
-  ["nvidia/nemotron-3.5-lightning:free", "cohere/north-mini-code:free", "liquid/lfm-2.5-2.6b:free"],
+  ["meta-llama/llama-3.3-70b-instruct:free", "google/gemini-2.0-flash-exp:free", "deepseek/deepseek-chat:free"],
+  ["qwen/qwen-2.5-coder-32b-instruct:free", "mistralai/mistral-7b-instruct:free", "microsoft/phi-3-medium-128k-instruct:free"],
+  ["openchat/openchat-7b:free", "huggingfaceh4/zephyr-7b-beta:free", "meta-llama/llama-3.1-8b-instruct:free"],
 ];
 
 // ── Main streaming function ───────────────────────────────────────────────────
@@ -274,14 +275,15 @@ export async function streamGeminiChat(
   let lastErrorMsg = "";
   let isRateLimited = false;
 
-  for (const batch of MODEL_BATCHES) {
+  for (let batchIndex = 0; batchIndex < MODEL_BATCHES.length; batchIndex++) {
+    const batch = MODEL_BATCHES[batchIndex];
     try {
       const response = await fetch(API_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${activeApiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
+          "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "https://safvan.ai",
           "X-Title": "Safvan AI",
         },
         body: JSON.stringify({
@@ -319,6 +321,10 @@ export async function streamGeminiChat(
             `[Safvan AI] OpenRouter batch (${batch.join(", ")}) returned ${response.status}. Trying next model batch...`
           );
           lastErrorMsg = errMsg;
+          // Brief pause before trying next batch on 429 to clear rate-limiter window
+          if (response.status === 429 && batchIndex < MODEL_BATCHES.length - 1) {
+            await new Promise((r) => setTimeout(r, 1200));
+          }
           continue; // Try next model batch
         }
 
@@ -351,7 +357,7 @@ export async function streamGeminiChat(
   // 7. Error fallback display if all model attempts failed
   let errorMsg: string;
   if (isRateLimited || lastErrorMsg.includes("429") || lastErrorMsg.includes("rate limit")) {
-    errorMsg = "⚠️ **Rate limit reached.** All free tier AI models are currently busy. Please wait 10–15 seconds and try sending your message again.";
+    errorMsg = "⚠️ **Rate limit reached.** The free AI models are currently receiving high traffic. Please wait 5–10 seconds and try sending your message again.";
   } else if (lastErrorMsg.includes("401") || lastErrorMsg.includes("403") || lastErrorMsg.includes("API key")) {
     errorMsg = "⚠️ **Invalid API key.** Please check `VITE_OPENROUTER_API_KEY` in your `.env` file.";
   } else if (lastErrorMsg.includes("fetch") || lastErrorMsg.includes("network")) {
