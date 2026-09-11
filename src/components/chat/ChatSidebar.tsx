@@ -59,11 +59,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           "border-r",
           "bg-[#F4ECE1] border-[#E7DCCC]",
           "dark:bg-[#1A1A1A] dark:border-[#2E2820]",
-          "transition-[margin-left,transform,opacity,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "sidebar-drawer-transition",
           "md:relative md:z-0",
           sidebarOpen
-            ? "translate-x-0 md:ml-0 opacity-100 shadow-xl md:shadow-none"
-            : "-translate-x-full md:-ml-[264px] opacity-0 pointer-events-none md:pointer-events-auto"
+            ? "translate-x-0 md:ml-0 opacity-100 shadow-2xl md:shadow-none pointer-events-auto"
+            : "-translate-x-full md:-ml-[264px] opacity-0 pointer-events-none"
         )}
       >
         {/* Brand Header */}
@@ -321,8 +321,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       <div
         onClick={() => setSidebarOpen(false)}
         className={cn(
-          "fixed inset-0 bg-black/30 backdrop-blur-[2px] z-30 md:hidden",
-          "transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "fixed inset-0 bg-black/40 backdrop-blur-[3px] z-30 md:hidden",
+          "sidebar-backdrop-transition",
           sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
       />

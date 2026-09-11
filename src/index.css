@@ -94,6 +94,36 @@
   animation: softPulse 1s ease-out 0.3s 1 both;
 }
 
+/* Sidebar Smooth Intro / Outro Transitions */
+.sidebar-drawer-transition {
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+              margin-left 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s ease;
+  will-change: transform, margin-left, opacity;
+}
+
+.sidebar-backdrop-transition {
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              backdrop-filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Staggered item entrance when sidebar opens */
+@keyframes sidebarContentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-sidebar-content-in {
+  animation: sidebarContentSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Smooth theme transition */
 *, *::before, *::after {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.08s ease;
