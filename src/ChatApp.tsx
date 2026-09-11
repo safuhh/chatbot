@@ -156,14 +156,7 @@ export default function ChatApp() {
     }
   }, [user]);
 
-  // ── Check for saved draft message from login redirect ──────────────────────
-  useEffect(() => {
-    const draft = sessionStorage.getItem("draft_message");
-    if (draft && user) {
-      sessionStorage.removeItem("draft_message");
-      executeSendMessage(draft, false);
-    }
-  }, [user]);
+
 
   // ── Temporary Chat Toggle ──────────────────────────────────────────────────
   const handleToggleTemporaryMode = (enabled: boolean) => {

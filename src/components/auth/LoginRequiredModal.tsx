@@ -62,13 +62,7 @@ export const LoginRequiredModal: React.FC<LoginRequiredModalProps> = ({
         {/* Actions */}
         <div className="mt-5 space-y-2.5">
           <button
-            onClick={() => {
-              // Save draft message if any before navigating
-              if (pendingMessage) {
-                sessionStorage.setItem("draft_message", pendingMessage);
-              }
-              navigate("/login");
-            }}
+            onClick={() => navigate("/login")}
             className={cn(
               "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-xs text-white transition-all shadow-sm",
               "bg-[#C4552F] hover:bg-[#A8421F] active:scale-[0.98]"
@@ -79,12 +73,7 @@ export const LoginRequiredModal: React.FC<LoginRequiredModalProps> = ({
           </button>
 
           <button
-            onClick={() => {
-              if (pendingMessage) {
-                sessionStorage.setItem("draft_message", pendingMessage);
-              }
-              navigate("/register");
-            }}
+            onClick={() => navigate("/register")}
             className={cn(
               "w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-xs transition-all border",
               "bg-[#FAF6F0] hover:bg-[#F4ECE1] text-[#1A1A1A] border-[#E7DCCC]",

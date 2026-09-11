@@ -11,8 +11,13 @@
 import { ChatMessage, Attachment } from "@/components/chat/types";
 import { buildCacheKey, getCached, setCached } from "./responseCache";
 
-const apiKey =
-  (import.meta.env.VITE_OPENROUTER_API_KEY as string | undefined) || "";
+const getApiKey = (): string => {
+  return (
+    (import.meta.env.VITE_OPENROUTER_API_KEY as string | undefined) ||
+    (import.meta.env.VITE_GEMINI_API_KEY as string | undefined) ||
+    ""
+  );
+};
 
 const MODEL = "inclusionai/ling-3.0-flash-vl:free";
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -214,9 +219,10 @@ export async function streamGeminiChat(
   }
 
   // 2. API key guard
-  if (!apiKey) {
+  const activeApiKey = getApiKey();
+  if (!activeApiKey) {
     return streamTextChunked(
-      "⚠️ **No API key configured.** Add `VITE_OPENROUTER_API_KEY` to your `.env` file and restart the dev server. Get a key at [OpenRouter](https://openrouter.ai/keys).",
+      "I am currently unable to process requests. Please try again in a moment.",
       onChunk
     );
   }
@@ -243,7 +249,7 @@ export async function streamGeminiChat(
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${activeApiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": window.location.origin,
         "X-Title": "Safvan AI",
@@ -267,19 +273,11 @@ export async function streamGeminiChat(
         errMsg = errBody;
       }
 
-      if (response.status === 429) {
-        return streamTextChunked(
-          `⚠️ **Rate limit reached.** Please wait a moment and try again. (${errMsg})`,
-          onChunk
-        );
-      }
-      if (response.status === 401 || response.status === 403) {
-        return streamTextChunked(
-          "⚠️ **Invalid API key.** Check `VITE_OPENROUTER_API_KEY` in your `.env` file. Get a key at [OpenRouter](https://openrouter.ai/keys).",
-          onChunk
-        );
-      }
-      throw new Error(`HTTP ${response.status}: ${errMsg}`);
+      console.error(`[OpenRouter API Error] HTTP ${response.status}:`, errMsg);
+      return streamTextChunked(
+        "I ran into a temporary issue processing your message. Please try again in a moment.",
+        onChunk
+      );
     }
 
     if (!response.body) {
