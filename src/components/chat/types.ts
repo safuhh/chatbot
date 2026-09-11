@@ -14,6 +14,8 @@ export interface ChatMessage {
   sender: "user" | "assistant";
   content: string;
   time?: string;
+  isError?: boolean;
+  isStreaming?: boolean;
   attachments?: Attachment[];
   codeSnippet?: {
     filename: string;
@@ -31,6 +33,7 @@ export interface TerraChatProps {
   title?: string;
   messages?: ChatMessage[];
   onSendMessage?: (message: string, attachments?: Attachment[]) => void;
+  onRegenerate?: () => void;
   onNewConversation?: () => void;
   chatHistory?: ChatHistoryItem[];
   activeChatId?: string;

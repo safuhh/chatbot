@@ -16,6 +16,7 @@ export default function TerraChatUI({
   title = "Safvan AI",
   messages: externalMessages,
   onSendMessage,
+  onRegenerate,
   onNewConversation,
   chatHistory: externalChatHistory,
   activeChatId: externalActiveChatId,
@@ -196,6 +197,7 @@ export default function TerraChatUI({
               messages={messages}
               isGenerating={isGenerating}
               messagesEndRef={messagesEndRef}
+              onRegenerate={onRegenerate}
             />
 
             <ChatComposer

@@ -397,6 +397,42 @@ export default function ChatApp() {
     }
   }, [isTemporaryMode, user, executeSendMessage]);
 
+  // ── Regenerate handler ─────────────────────────────────────────────────────
+  const handleRegenerate = useCallback(async (): Promise<void> => {
+    if (isGenerating) return;
+    const thread = currentMessages;
+    if (!thread || thread.length === 0) return;
+
+    // Find last user message in the thread
+    const lastUserMsgIndex = [...thread].reverse().findIndex((m) => m.sender === "user");
+    if (lastUserMsgIndex === -1) return;
+
+    const actualIndex = thread.length - 1 - lastUserMsgIndex;
+    const lastUserMsg = thread[actualIndex];
+
+    // Truncate thread to before the last user message turn
+    const trimmedThread = thread.slice(0, actualIndex);
+
+    const targetSetConversations = isTemporaryMode ? setGuestConversations : setAuthConversations;
+    const targetActiveChatId = isTemporaryMode ? guestActiveChatId : authActiveChatId;
+
+    targetSetConversations((prev) => ({
+      ...prev,
+      [targetActiveChatId]: trimmedThread,
+    }));
+
+    await executeSendMessage(lastUserMsg.content, isTemporaryMode, lastUserMsg.attachments);
+  }, [
+    isGenerating,
+    currentMessages,
+    isTemporaryMode,
+    setGuestConversations,
+    setAuthConversations,
+    guestActiveChatId,
+    authActiveChatId,
+    executeSendMessage,
+  ]);
+
   // ── Switch to temporary mode from modal ────────────────────────────────────
   const handleSwitchToTemporaryFromModal = () => {
     setIsTemporaryMode(true);
@@ -428,6 +464,7 @@ export default function ChatApp() {
         title="Safvan AI"
         messages={currentMessages}
         onSendMessage={handleSendMessage}
+        onRegenerate={handleRegenerate}
         onNewConversation={handleNewConversation}
         chatHistory={chatHistory}
         activeChatId={activeChatId}
