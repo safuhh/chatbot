@@ -116,18 +116,14 @@ export default function ChatApp() {
             navigate(`/c/${defaultId}`, { replace: true });
           }
         } else {
-          // No URL chatId: restore last saved active chat or most recent conversation
+          // No URL chatId: if a valid last active chat was saved, restore it
           const savedId = localStorage.getItem("last_active_chat_id");
           const existsSaved = savedId && history.some((item) => item.id === savedId);
           if (existsSaved && savedId) {
             setAuthActiveChatId(savedId);
             navigate(`/c/${savedId}`, { replace: true });
-          } else {
-            const defaultId = history[0].id;
-            setAuthActiveChatId(defaultId);
-            localStorage.setItem("last_active_chat_id", defaultId);
-            navigate(`/c/${defaultId}`, { replace: true });
           }
+          // If no active chat saved (e.g. user initiated New Conversation), remain on empty chat at /
         }
       }
     });
