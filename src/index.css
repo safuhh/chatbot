@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode for Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-serif: 'Fraunces', Georgia, serif;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+}
+
+.font-serif-display {
+  font-family: var(--font-serif);
+}
+.font-sans-body {
+  font-family: var(--font-sans);
+}
+.font-mono-code {
+  font-family: var(--font-mono);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #E7DCCC; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #C4552F; }
+.dark ::-webkit-scrollbar-thumb { background: #2E2820; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #C4552F; }
+
+/* Typing indicator bounce animation */
+@keyframes bounce-dot {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40%           { transform: scale(1); opacity: 1; }
+}
+.animate-bounce-dot-1 { animation: bounce-dot 1.4s infinite ease-in-out 0s; }
+.animate-bounce-dot-2 { animation: bounce-dot 1.4s infinite ease-in-out 0.2s; }
+.animate-bounce-dot-3 { animation: bounce-dot 1.4s infinite ease-in-out 0.4s; }
+
+/* ── Intro animations ──────────────────────────────────────────────────── */
+
+/* App shell: fade in + drift up from 12px */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-in {
+  animation: fadeSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Top bar: fade down from -6px */
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-down {
+  animation: fadeSlideDown 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+/* Each message: fade up with stagger via CSS var */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Composer: fade up last */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+/* Brand mark soft pulse on mount */
+@keyframes softPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(196, 85, 47, 0.35); }
+  60%  { box-shadow: 0 0 0 8px rgba(196, 85, 47, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(196, 85, 47, 0); }
+}
+.animate-soft-pulse {
+  animation: softPulse 1s ease-out 0.3s 1 both;
+}
+
+/* Smooth theme transition */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.08s ease;
+}
