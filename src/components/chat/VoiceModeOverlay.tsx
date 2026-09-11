@@ -1,5 +1,5 @@
 import React from "react";
-import { Mic, X, Volume2, Sparkles, Send, Square, AlertCircle } from "lucide-react";
+import { Mic, X, Square, Send, AlertCircle } from "lucide-react";
 import { VoiceStatus } from "@/hooks/useVoiceMode";
 
 interface VoiceModeOverlayProps {
@@ -26,105 +26,94 @@ export const VoiceModeOverlay: React.FC<VoiceModeOverlayProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-10 bg-slate-950/90 dark:bg-black/95 backdrop-blur-2xl text-white animate-fade-in transition-all duration-300">
-      {/* Top Header Row */}
-      <div className="w-full max-w-2xl flex items-center justify-between z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#C4552F] to-[#E07A5F] flex items-center justify-center shadow-lg shadow-[#C4552F]/30">
-            <Sparkles className="w-5 h-5 text-white animate-pulse" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-white tracking-wide">Safvan AI Voice</h2>
-            <p className="text-xs text-slate-400 font-mono">Deepgram Flux TTS • Voice-to-Voice</p>
-          </div>
+    <div className="fixed inset-0 z-50 flex flex-col justify-between p-6 sm:p-10 bg-[#FAF6F0] text-[#1A1A1A] dark:bg-[#12100E] dark:text-[#EDE8E1] transition-colors duration-200 font-sans">
+      {/* Top Bar */}
+      <div className="w-full max-w-3xl mx-auto flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#C4552F]" />
+          <span className="text-sm font-semibold tracking-tight text-[#1A1A1A] dark:text-[#EDE8E1]">
+            Voice Mode
+          </span>
         </div>
 
         <button
           type="button"
           onClick={onClose}
-          className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors backdrop-blur-md"
+          className="p-2 rounded-full text-[#8A7E6C] hover:text-[#1A1A1A] hover:bg-[#E7DCCC]/50 dark:text-[#9A8E80] dark:hover:text-[#EDE8E1] dark:hover:bg-[#28221B] transition-colors"
           title="Exit Voice Mode"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Main Center Animation & Status Area */}
-      <div className="flex flex-col items-center justify-center my-auto w-full max-w-xl text-center space-y-8 z-10">
-        {/* Animated Glowing Orb / Visualizer */}
-        <div className="relative flex items-center justify-center">
+      {/* Center Focus Area */}
+      <div className="w-full max-w-lg mx-auto flex flex-col items-center justify-center my-auto space-y-10 text-center">
+        {/* Minimal Central Voice Orb */}
+        <div className="relative flex items-center justify-center w-36 h-36">
           {status === "listening" && (
             <div className="relative flex items-center justify-center">
-              <span className="absolute w-44 h-44 rounded-full bg-red-500/20 animate-ping opacity-75" />
-              <span className="absolute w-36 h-36 rounded-full bg-gradient-to-r from-red-500/30 to-orange-500/30 animate-pulse blur-md" />
-              <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-red-500 to-orange-500 flex items-center justify-center shadow-2xl shadow-red-500/50 scale-105 transition-all">
-                <Mic className="w-12 h-12 text-white animate-bounce" />
+              <span className="absolute w-32 h-32 rounded-full bg-[#C4552F]/10 dark:bg-[#C4552F]/20 animate-ping opacity-50" />
+              <div className="w-24 h-24 rounded-full bg-[#C4552F] text-white flex items-center justify-center shadow-md transition-all">
+                <Mic className="w-9 h-9" />
               </div>
             </div>
           )}
 
           {status === "thinking" && (
             <div className="relative flex items-center justify-center">
-              <span className="absolute w-44 h-44 rounded-full bg-amber-500/20 animate-spin blur-lg" />
-              <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-2xl shadow-amber-500/50 animate-pulse">
-                <Sparkles className="w-12 h-12 text-white animate-spin" />
+              <div className="w-24 h-24 rounded-full border-2 border-dashed border-[#C4552F] animate-spin flex items-center justify-center">
+                <span className="w-12 h-12 rounded-full bg-[#C4552F]/20 animate-pulse" />
               </div>
             </div>
           )}
 
           {status === "speaking" && (
             <div className="relative flex items-center justify-center">
-              <span className="absolute w-48 h-48 rounded-full bg-emerald-500/20 animate-pulse blur-xl" />
-              <span className="absolute w-36 h-36 rounded-full bg-emerald-500/30 animate-ping opacity-60" />
-              <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-2xl shadow-emerald-500/50 scale-105 transition-all">
-                <Volume2 className="w-12 h-12 text-white animate-pulse" />
+              <span className="absolute w-32 h-32 rounded-full bg-[#2A7B58]/15 dark:bg-[#2A7B58]/25 animate-pulse" />
+              <div className="w-24 h-24 rounded-full bg-[#2A7B58] text-white flex items-center justify-center shadow-md">
+                {/* 4 Minimal Soundbar Waves */}
+                <div className="flex items-center gap-1.5 h-8">
+                  <span className="w-1 bg-white rounded-full h-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1 bg-white rounded-full h-3/4 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1 bg-white rounded-full h-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <span className="w-1 bg-white rounded-full h-1/2 animate-bounce" style={{ animationDelay: "450ms" }} />
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Status Badge */}
-        <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md text-xs font-mono text-slate-200 shadow-md">
-          {status === "listening" && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
-              <span>Listening... Speak naturally</span>
-            </>
-          )}
-          {status === "thinking" && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-spin" />
-              <span>Thinking & processing response...</span>
-            </>
-          )}
-          {status === "speaking" && (
-            <>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Safvan AI is speaking...</span>
-            </>
-          )}
-        </div>
+        {/* Minimal Status Label */}
+        <p className="text-xs font-mono tracking-wider uppercase text-[#8A7E6C] dark:text-[#9A8E80]">
+          {status === "listening" && "Listening"}
+          {status === "thinking" && "Thinking"}
+          {status === "speaking" && "Safvan AI Speaking"}
+        </p>
 
-        {/* Live Transcript / Response Preview */}
-        <div className="w-full min-h-[90px] flex flex-col items-center justify-center px-4">
+        {/* Transcript / Subtitle Display */}
+        <div className="min-h-[80px] w-full px-4 flex flex-col items-center justify-center">
           {status === "listening" && (
-            <p className="text-base sm:text-lg font-medium text-slate-200 max-w-lg leading-relaxed italic animate-fade-in">
-              {userTranscript ? `"${userTranscript}"` : "Say something to Safvan AI..."}
+            <p className="text-base sm:text-lg font-normal text-[#1A1A1A] dark:text-[#EDE8E1] leading-relaxed max-w-md">
+              {userTranscript || "Speak naturally..."}
             </p>
           )}
 
           {status === "thinking" && (
-            <p className="text-sm text-slate-400 font-mono animate-pulse">Generating answer...</p>
+            <div className="flex items-center gap-1.5 text-sm text-[#8A7E6C] dark:text-[#9A8E80]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C4552F] animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C4552F] animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C4552F] animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
           )}
 
           {status === "speaking" && (
-            <p className="text-base sm:text-lg font-medium text-emerald-200 max-w-lg leading-relaxed line-clamp-4 animate-fade-in">
-              {aiResponseText || "Speaking..."}
+            <p className="text-base sm:text-lg font-normal text-[#1A1A1A] dark:text-[#EDE8E1] leading-relaxed line-clamp-3 max-w-md">
+              {aiResponseText || "..."}
             </p>
           )}
 
           {error && (
-            <div className="mt-3 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-xs">
+            <div className="mt-2 flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -132,36 +121,37 @@ export const VoiceModeOverlay: React.FC<VoiceModeOverlayProps> = ({
         </div>
       </div>
 
-      {/* Bottom Controls */}
-      <div className="w-full max-w-md flex items-center justify-center gap-4 z-10">
+      {/* Bottom Action Controls */}
+      <div className="w-full max-w-md mx-auto flex items-center justify-center gap-4">
         {status === "speaking" ? (
           <button
             type="button"
             onClick={onInterrupt}
-            className="flex items-center gap-2.5 px-6 py-3 rounded-full bg-red-600 hover:bg-red-500 text-white font-medium text-sm shadow-lg shadow-red-600/40 transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1A1A1A] text-white dark:bg-[#EDE8E1] dark:text-[#1A1A1A] text-xs font-semibold hover:opacity-90 transition-opacity"
           >
-            <Square className="w-4 h-4 fill-white" />
+            <Square className="w-3.5 h-3.5 fill-current" />
             <span>Stop Speaking</span>
           </button>
         ) : status === "listening" && userTranscript ? (
           <button
             type="button"
             onClick={onSendSpeech}
-            className="flex items-center gap-2.5 px-6 py-3 rounded-full bg-[#C4552F] hover:bg-[#A8421F] text-white font-medium text-sm shadow-lg shadow-[#C4552F]/40 transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#C4552F] text-white text-xs font-semibold hover:bg-[#A8421F] transition-colors"
           >
-            <Send className="w-4 h-4" />
-            <span>Send Now</span>
+            <Send className="w-3.5 h-3.5" />
+            <span>Send</span>
           </button>
         ) : (
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white font-medium text-xs border border-white/15 transition-all"
+            className="px-5 py-2.5 rounded-full border border-[#E7DCCC] text-[#8A7E6C] hover:text-[#1A1A1A] hover:bg-[#E7DCCC]/30 dark:border-[#2E2820] dark:text-[#9A8E80] dark:hover:text-[#EDE8E1] dark:hover:bg-[#28221B] text-xs font-medium transition-colors"
           >
-            End Voice Mode
+            Exit Voice
           </button>
         )}
       </div>
     </div>
   );
 };
+
