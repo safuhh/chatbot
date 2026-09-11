@@ -5,10 +5,7 @@ import {
   Search,
   MessageSquare,
   Settings,
-  User,
   LogOut,
-  HelpCircle,
-  SlidersHorizontal,
   PanelLeftClose,
   X,
   ShieldOff,
@@ -305,33 +302,14 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 "dark:bg-[#1E1A15] dark:border-[#2E2820]"
               )}
             >
-              {[
-                { icon: <User className="w-3.5 h-3.5" />, label: "Profile Settings" },
-                { icon: <SlidersHorizontal className="w-3.5 h-3.5" />, label: "Preferences" },
-                { icon: <HelpCircle className="w-3.5 h-3.5" />, label: "Documentation" },
-              ].map(({ icon, label }) => (
-                <button
-                  key={label}
-                  onClick={() => setSettingsOpen(false)}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-lg text-left transition-colors",
-                    "text-[#1A1A1A] hover:bg-[#F4ECE1]",
-                    "dark:text-[#EDE8E1] dark:hover:bg-[#262019]"
-                  )}
-                >
-                  <span className="text-[#8A7E6C] dark:text-[#6B6358]">{icon}</span>
-                  {label}
-                </button>
-              ))}
-              <div className="my-1 border-t border-[#E7DCCC] dark:border-[#2E2820]" />
               <button
                 onClick={() => {
                   setSettingsOpen(false);
                   if (onLogout) onLogout();
                 }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-lg text-left text-[#C4552F] hover:bg-[#F4ECE1] dark:hover:bg-[#262019] font-medium transition-colors"
+                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-lg text-left text-[#C4552F] hover:bg-[#F4ECE1] dark:hover:bg-[#262019] font-medium transition-colors"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4" />
                 Sign out
               </button>
             </div>
