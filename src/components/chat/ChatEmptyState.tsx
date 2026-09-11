@@ -11,7 +11,6 @@ interface ChatEmptyStateProps {
   handleSend: (attachments?: Attachment[]) => void;
   isGenerating: boolean;
   placeholder: string;
-  modelName: string;
   isTemporaryMode?: boolean;
 }
 
@@ -21,7 +20,6 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
   handleSend,
   isGenerating,
   placeholder,
-  modelName,
   isTemporaryMode = false,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -140,16 +138,6 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
                     </span>
                   )}
                 </button>
-                <div
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border max-w-[130px] sm:max-w-none",
-                    "bg-[#F4ECE1] text-[#1A1A1A] border-[#E7DCCC]",
-                    "dark:bg-[#262019] dark:text-[#EDE8E1] dark:border-[#2E2820]"
-                  )}
-                >
-                  <span className="w-2 h-2 rounded-full bg-[#C4552F] shrink-0" />
-                  <span className="font-medium truncate">{modelName}</span>
-                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="hidden sm:inline-block text-[11px] font-mono text-[#8A7E6C] dark:text-[#6B6358]">

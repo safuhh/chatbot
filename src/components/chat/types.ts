@@ -36,8 +36,6 @@ export interface TerraChatProps {
   activeChatId?: string;
   onSelectChat?: (id: string) => void;
   isGenerating?: boolean;
-  modelName?: string;
-  onModelChange?: (model: string) => void;
   placeholder?: string;
   showTopBar?: boolean;
   className?: string;

@@ -16,7 +16,7 @@ interface ChatMessageListProps {
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export const ChatMessageList: React.FC<ChatMessageListProps> = ({
+export const ChatMessageList: React.FC<ChatMessageListProps> = React.memo(({
   messages,
   isGenerating,
   messagesEndRef,
@@ -219,4 +219,6 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ChatMessageList.displayName = "ChatMessageList";

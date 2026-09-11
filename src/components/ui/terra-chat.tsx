@@ -21,8 +21,6 @@ export default function TerraChatUI({
   activeChatId: externalActiveChatId,
   onSelectChat,
   isGenerating = false,
-  modelName = "Safvan AI",
-  onModelChange,
   placeholder = "Reply to Safvan AI…",
   showTopBar = true,
   className,
@@ -190,7 +188,6 @@ export default function TerraChatUI({
             handleSend={handleSend}
             isGenerating={isGenerating}
             placeholder={isTemporaryMode ? "Type a message in Temporary Chat…" : placeholder}
-            modelName={modelName}
             isTemporaryMode={isTemporaryMode}
           />
         ) : (
@@ -206,8 +203,6 @@ export default function TerraChatUI({
               setInputMessage={setInputMessage}
               handleSend={handleSend}
               isGenerating={isGenerating}
-              modelName={modelName}
-              onModelChange={onModelChange}
               placeholder={isTemporaryMode ? "Type a message in Temporary Chat…" : placeholder}
             />
           </>

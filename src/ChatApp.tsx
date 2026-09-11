@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import TerraChatUI, { ChatMessage, ChatHistoryItem, Attachment } from "@/components/ui/terra-chat";
 import { streamGeminiChat } from "@/lib/gemini";
 import { useAuthContext } from "@/lib/AuthContext";
@@ -22,6 +23,8 @@ import {
  */
 export default function ChatApp() {
   const { user, isGuest, logout } = useAuthContext();
+  const { chatId: urlChatId } = useParams<{ chatId?: string }>();
+  const navigate = useNavigate();
 
   // ── Temporary Chat ─────────────────────────────────────────────────────────
   const [isTemporaryMode, setIsTemporaryMode] = useState<boolean>(false);
@@ -44,17 +47,23 @@ export default function ChatApp() {
   // ── Authenticated session (Supabase-backed) ────────────────────────────────
   const [authConversations, setAuthConversations] = useState<Record<string, ChatMessage[]>>({});
   const [authChatHistory, setAuthChatHistory] = useState<ChatHistoryItem[]>([]);
-  const [authActiveChatId, setAuthActiveChatId] = useState<string>(() => Date.now().toString());
+  const [authActiveChatId, setAuthActiveChatId] = useState<string>(() => {
+    if (urlChatId) return urlChatId;
+    const saved = typeof window !== "undefined" ? localStorage.getItem("last_active_chat_id") : null;
+    if (saved) return saved;
+    return Date.now().toString();
+  });
   const [authLoading, setAuthLoading] = useState<boolean>(false);
 
   // Track which conversations have been loaded from Supabase to avoid re-fetching
   const loadedConversationIds = useRef<Set<string>>(new Set());
   // Track if the sidebar history has been loaded for this user
   const historyLoadedForUser = useRef<string | null>(null);
+  // AbortController for the current in-flight Gemini request — cancels stale requests
+  const abortRef = useRef<AbortController | null>(null);
 
   // ── Shared State ───────────────────────────────────────────────────────────
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [selectedModel, setSelectedModel] = useState<string>("gemini-3.6-flash");
 
   // ── Active state routing (temporary vs auth vs guest) ──────────────────────
   const isAuthMode = !isTemporaryMode && !!user;
@@ -73,6 +82,14 @@ export default function ChatApp() {
 
   const currentMessages = conversations[activeChatId] || [];
 
+  // ── Sync URL param with state when user navigates back/forward in browser ──
+  useEffect(() => {
+    if (isAuthMode && urlChatId && urlChatId !== authActiveChatId) {
+      setAuthActiveChatId(urlChatId);
+      localStorage.setItem("last_active_chat_id", urlChatId);
+    }
+  }, [urlChatId, authActiveChatId, isAuthMode]);
+
   // ── Load conversation list from Supabase when user logs in ─────────────────
   useEffect(() => {
     if (!user || isTemporaryMode) return;
@@ -84,22 +101,48 @@ export default function ChatApp() {
     loadConversations().then((history) => {
       setAuthChatHistory(history);
       setAuthLoading(false);
+
+      if (history.length > 0) {
+        if (urlChatId) {
+          const exists = history.some((item) => item.id === urlChatId);
+          if (exists) {
+            setAuthActiveChatId(urlChatId);
+            localStorage.setItem("last_active_chat_id", urlChatId);
+          } else {
+            // URL chatId doesn't exist in history, redirect to latest
+            const defaultId = history[0].id;
+            setAuthActiveChatId(defaultId);
+            localStorage.setItem("last_active_chat_id", defaultId);
+            navigate(`/c/${defaultId}`, { replace: true });
+          }
+        } else {
+          // No URL chatId: restore last saved active chat or most recent conversation
+          const savedId = localStorage.getItem("last_active_chat_id");
+          const existsSaved = savedId && history.some((item) => item.id === savedId);
+          if (existsSaved && savedId) {
+            setAuthActiveChatId(savedId);
+            navigate(`/c/${savedId}`, { replace: true });
+          } else {
+            const defaultId = history[0].id;
+            setAuthActiveChatId(defaultId);
+            localStorage.setItem("last_active_chat_id", defaultId);
+            navigate(`/c/${defaultId}`, { replace: true });
+          }
+        }
+      }
     });
-  }, [user, isTemporaryMode]);
+  }, [user, isTemporaryMode, urlChatId, navigate]);
 
   // ── When user switches to a conversation, load its messages if not cached ──
   useEffect(() => {
     if (!isAuthMode || !activeChatId) return;
     if (loadedConversationIds.current.has(activeChatId)) return;
-    // Only fetch if it's an existing conversation (in history), not a brand-new local one
-    const existsInHistory = authChatHistory.some((item) => item.id === activeChatId);
-    if (!existsInHistory) return;
 
     loadedConversationIds.current.add(activeChatId);
     loadMessages(activeChatId).then((msgs) => {
       setAuthConversations((prev) => ({ ...prev, [activeChatId]: msgs }));
     });
-  }, [isAuthMode, activeChatId, authChatHistory]);
+  }, [isAuthMode, activeChatId]);
 
   // ── Reset auth state when user logs out ────────────────────────────────────
   useEffect(() => {
@@ -109,6 +152,7 @@ export default function ChatApp() {
       setAuthActiveChatId(Date.now().toString());
       loadedConversationIds.current.clear();
       historyLoadedForUser.current = null;
+      localStorage.removeItem("last_active_chat_id");
     }
   }, [user]);
 
@@ -137,12 +181,20 @@ export default function ChatApp() {
     setActiveChatId(newId);
     if (isAuthMode) {
       setAuthConversations((prev) => ({ ...prev, [newId]: [] }));
+      localStorage.removeItem("last_active_chat_id");
+      navigate("/");
     }
   };
 
   // ── Select Conversation ────────────────────────────────────────────────────
   const handleSelectChat = (id: string) => {
     setActiveChatId(id);
+    if (isAuthMode) {
+      localStorage.setItem("last_active_chat_id", id);
+      if (urlChatId !== id) {
+        navigate(`/c/${id}`);
+      }
+    }
   };
 
   // ── Delete Conversation ────────────────────────────────────────────────────
@@ -152,7 +204,8 @@ export default function ChatApp() {
       await deleteConversation(id);
 
       // Update local state immediately
-      setAuthChatHistory((prev) => prev.filter((item) => item.id !== id));
+      const nextHistory = authChatHistory.filter((item) => item.id !== id);
+      setAuthChatHistory(nextHistory);
       setAuthConversations((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -161,7 +214,17 @@ export default function ChatApp() {
       loadedConversationIds.current.delete(id);
 
       if (authActiveChatId === id) {
-        setAuthActiveChatId(Date.now().toString());
+        if (nextHistory.length > 0) {
+          const nextActiveId = nextHistory[0].id;
+          setAuthActiveChatId(nextActiveId);
+          localStorage.setItem("last_active_chat_id", nextActiveId);
+          navigate(`/c/${nextActiveId}`, { replace: true });
+        } else {
+          const newId = Date.now().toString();
+          setAuthActiveChatId(newId);
+          localStorage.removeItem("last_active_chat_id");
+          navigate("/", { replace: true });
+        }
       }
     } else {
       // Guest / Temporary — remove from in-memory state
@@ -178,11 +241,26 @@ export default function ChatApp() {
   };
 
   // ── Core send message function ─────────────────────────────────────────────
-  const executeSendMessage = async (
+  // Max conversation turns sent to Gemini. Older messages are dropped to reduce
+  // token count and improve time-to-first-token on long conversations.
+  const MAX_HISTORY_MESSAGES = 20; // 10 user + 10 assistant turns
+
+  const executeSendMessage = useCallback(async (
     userText: string,
     isTemp: boolean,
     attachments?: Attachment[]
   ): Promise<void> => {
+    // ⚡ Cancel any in-flight request immediately so we don't waste quota
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortRef.current = abortController;
+
+    // ⚡ Show generating state FIRST — before any state updates or async work
+    // so the typing indicator appears in the same React paint as the Send click
+    setIsGenerating(true);
+
     const timeString = new Date().toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
@@ -216,8 +294,7 @@ export default function ChatApp() {
     // Create a title from the first message
     const titleText =
       userText || (attachments && attachments.length > 0 ? attachments[0].name : "New Chat");
-    const title =
-      titleText.length > 60 ? `${titleText.slice(0, 60)}...` : titleText;
+    const title = titleText.length > 60 ? `${titleText.slice(0, 60)}...` : titleText;
     const displayTitle = title.length > 28 ? `${title.slice(0, 28)}...` : title;
 
     // Add to sidebar history if it's a new conversation
@@ -229,62 +306,90 @@ export default function ChatApp() {
       };
       targetSetChatHistory((prev: ChatHistoryItem[]) => [newHistoryItem, ...prev]);
 
-      // Persist conversation to Supabase (only for authenticated non-temporary users)
+      // ⚡ Fire-and-forget — do NOT await; streaming starts immediately
       if (!isTemp && user) {
         loadedConversationIds.current.add(targetActiveChatId);
-        await createConversation(targetActiveChatId, title, user.id);
+        localStorage.setItem("last_active_chat_id", targetActiveChatId);
+        navigate(`/c/${targetActiveChatId}`, { replace: true });
+        createConversation(targetActiveChatId, title, user.id).catch((e) =>
+          console.warn("[ChatApp] createConversation:", e)
+        );
       }
     }
 
     // Update local state with user message + empty assistant placeholder
     const updatedThread = [...existingThread, userMsg, assistantMsg];
+    // Track the index of the assistant message for O(1) updates during streaming
+    const assistantMsgIndex = updatedThread.length - 1;
+
     targetSetConversations((prev: Record<string, ChatMessage[]>) => ({
       ...prev,
       [targetActiveChatId]: updatedThread,
     }));
-    setIsGenerating(true);
 
-    // Save user message to Supabase
+    // ⚡ Fire-and-forget — save user message without blocking stream start
     if (!isTemp && user) {
-      await saveMessage(userMsg, targetActiveChatId);
+      saveMessage(userMsg, targetActiveChatId).catch((e) =>
+        console.warn("[ChatApp] saveMessage(user):", e)
+      );
     }
+
+    // ⚡ Trim history to last MAX_HISTORY_MESSAGES before sending to Gemini.
+    // Fewer tokens → lower TTFT, especially on long conversations.
+    const trimmedHistory = existingThread.slice(-MAX_HISTORY_MESSAGES);
 
     // Stream response from Gemini
+    // ⚡ skipCache=true for Temporary Chat — those responses must not pollute the cache
     let finalContent = "";
-    await streamGeminiChat(
-      existingThread,
-      userText,
-      (updatedText: string) => {
-        finalContent = updatedText;
-        targetSetConversations((prev: Record<string, ChatMessage[]>) => {
-          const thread = prev[targetActiveChatId] || [];
-          return {
-            ...prev,
-            [targetActiveChatId]: thread.map((msg) =>
-              msg.id === assistantMsgId ? { ...msg, content: updatedText } : msg
-            ),
-          };
-        });
-      },
-      attachments
-    );
-
-    setIsGenerating(false);
-
-    // Save completed assistant message to Supabase
-    if (!isTemp && user && finalContent) {
-      const finalAssistantMsg: ChatMessage = {
-        id: assistantMsgId,
-        sender: "assistant",
-        content: finalContent,
-        time: timeString,
-      };
-      await saveMessage(finalAssistantMsg, targetActiveChatId);
+    try {
+      await streamGeminiChat(
+        trimmedHistory,
+        userText,
+        (updatedText: string) => {
+          // Drop updates from an aborted request
+          if (abortController.signal.aborted) return;
+          finalContent = updatedText;
+          // ⚡ O(1) update: directly replace the assistant message at its known index
+          targetSetConversations((prev: Record<string, ChatMessage[]>) => {
+            const thread = prev[targetActiveChatId];
+            if (!thread) return prev;
+            const updated = [...thread];
+            updated[assistantMsgIndex] = { ...updated[assistantMsgIndex], content: updatedText };
+            return { ...prev, [targetActiveChatId]: updated };
+          });
+        },
+        attachments,
+        isTemp // skipCache
+      );
+    } catch (err) {
+      if (!abortController.signal.aborted) {
+        console.error("[ChatApp] streamGeminiChat error:", err);
+      }
     }
-  };
+
+    // Only update state if this request wasn't superseded by a newer one
+    if (!abortController.signal.aborted) {
+      setIsGenerating(false);
+      abortRef.current = null;
+
+      // Save completed assistant message to Supabase (fire-and-forget)
+      if (!isTemp && user && finalContent) {
+        const finalAssistantMsg: ChatMessage = {
+          id: assistantMsgId,
+          sender: "assistant",
+          content: finalContent,
+          time: timeString,
+        };
+        saveMessage(finalAssistantMsg, targetActiveChatId).catch((e) =>
+          console.warn("[ChatApp] saveMessage(assistant):", e)
+        );
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isTemporaryMode, guestActiveChatId, authActiveChatId, guestConversations, authConversations]);
 
   // ── Main send handler (called by UI) ───────────────────────────────────────
-  const handleSendMessage = async (
+  const handleSendMessage = useCallback(async (
     userText: string,
     attachments?: Attachment[]
   ): Promise<void> => {
@@ -301,7 +406,7 @@ export default function ChatApp() {
       setPendingUserMessage(userText);
       setShowLoginModal(true);
     }
-  };
+  }, [isTemporaryMode, user, executeSendMessage]);
 
   // ── Switch to temporary mode from modal ────────────────────────────────────
   const handleSwitchToTemporaryFromModal = () => {
@@ -339,8 +444,6 @@ export default function ChatApp() {
         activeChatId={activeChatId}
         onSelectChat={handleSelectChat}
         isGenerating={isGenerating || authLoading}
-        modelName={selectedModel}
-        onModelChange={(model: string) => setSelectedModel(model)}
         isGuest={isGuest}
         isTemporaryMode={isTemporaryMode}
         onToggleTemporaryMode={handleToggleTemporaryMode}

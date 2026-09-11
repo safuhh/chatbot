@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Paperclip, ArrowUp, ChevronDown, Check } from "lucide-react";
+import React, { useRef, useEffect } from "react";
+import { Paperclip, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Attachment } from "./types";
 import { useAttachments } from "@/lib/useAttachments";
@@ -10,8 +10,6 @@ interface ChatComposerProps {
   setInputMessage: (val: string) => void;
   handleSend: (attachments?: Attachment[]) => void;
   isGenerating: boolean;
-  modelName: string;
-  onModelChange?: (model: string) => void;
   placeholder: string;
 }
 
@@ -20,11 +18,8 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   setInputMessage,
   handleSend,
   isGenerating,
-  modelName,
-  onModelChange,
   placeholder,
 }) => {
-  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -134,53 +129,6 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                 )}
               </button>
 
-              {/* Model Chip */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-colors max-w-[130px] sm:max-w-none",
-                    "bg-[#F4ECE1] hover:bg-[#EAD6C4] text-[#1A1A1A] border-[#E7DCCC]",
-                    "dark:bg-[#262019] dark:hover:bg-[#2E2820] dark:text-[#EDE8E1] dark:border-[#2E2820]"
-                  )}
-                >
-                  <span className="w-2 h-2 rounded-full bg-[#C4552F] shrink-0" />
-                  <span className="font-medium truncate">{modelName}</span>
-                  <ChevronDown className="w-3 h-3 text-[#8A7E6C] dark:text-[#6B6358] shrink-0" />
-                </button>
-
-                {modelDropdownOpen && (
-                  <div
-                    className={cn(
-                      "absolute bottom-10 left-0 rounded-xl shadow-lg p-1.5 w-48 sm:w-56 z-50 border",
-                      "bg-[#FAF6F0] border-[#E7DCCC]",
-                      "dark:bg-[#1E1A15] dark:border-[#2E2820]"
-                    )}
-                  >
-                    {["Safvan AI", "Safvan Pro", "Custom Model"].map((name) => (
-                      <button
-                        key={name}
-                        onClick={() => {
-                          if (onModelChange) onModelChange(name);
-                          setModelDropdownOpen(false);
-                        }}
-                        className={cn(
-                          "w-full text-left px-2.5 py-1.5 text-xs rounded-lg flex items-center justify-between transition-colors",
-                          modelName === name
-                            ? "bg-[#F0E3D5] text-[#C4552F] font-semibold dark:bg-[#2A1F16] dark:text-[#D4663F]"
-                            : "text-[#1A1A1A] hover:bg-[#F4ECE1] dark:text-[#EDE8E1] dark:hover:bg-[#262019]"
-                        )}
-                      >
-                        <span className="truncate">{name}</span>
-                        {modelName === name && (
-                          <Check className="w-3.5 h-3.5 text-[#C4552F] dark:text-[#D4663F] shrink-0" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
 
             <div className="flex items-center gap-2">
