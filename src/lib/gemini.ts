@@ -4,7 +4,7 @@
  * Uses the OpenAI-compatible OpenRouter API with SSE streaming.
  * No third-party SDK required — plain fetch.
  *
- * Model: inclusionai/ling-3.0-flash-vl:free
+ * Model: inclusionai/ling-3.0-flash-fin:free
  * API:   https://openrouter.ai/api/v1/chat/completions
  */
 
@@ -19,8 +19,8 @@ const getApiKey = (): string => {
   );
 };
 
-
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL_NAME = "inclusionai/ling-3.0-flash-fin:free";
 
 const SYSTEM_PROMPT =
   "You are Safvan AI, a helpful, intelligent, precise, and friendly general-purpose AI assistant. " +
@@ -207,19 +207,12 @@ async function* parseSSEStream(
   }
 }
 
-const MODEL_BATCHES = [
-  ["meta-llama/llama-3.3-70b-instruct:free", "google/gemini-2.0-flash-exp:free", "deepseek/deepseek-chat:free"],
-  ["qwen/qwen-2.5-coder-32b-instruct:free", "mistralai/mistral-7b-instruct:free", "microsoft/phi-3-medium-128k-instruct:free"],
-  ["openchat/openchat-7b:free", "huggingfaceh4/zephyr-7b-beta:free", "meta-llama/llama-3.1-8b-instruct:free"],
-];
-
 // ── Main streaming function ───────────────────────────────────────────────────
 
 /**
- * Streams an OpenRouter AI response token-by-token.
+ * Streams an OpenRouter AI response token-by-token using inclusionai/ling-3.0-flash-fin:free.
  * Calls onChunk(accumulatedText) on each new token.
  * Returns the full response string when done.
- * Uses 3-model fallback arrays supported natively by OpenRouter + client-side batch retries.
  *
  * @param chatHistory  Previous messages in this conversation.
  * @param userPrompt   The user's message.
@@ -271,72 +264,46 @@ export async function streamGeminiChat(
   // 4. Build request payload
   const messages = buildMessages(chatHistory, userPrompt, attachments);
 
-  // 5. Call OpenRouter with model batch fallback logic
+  // 5. Call OpenRouter with inclusionai/ling-3.0-flash-fin:free
   let lastErrorMsg = "";
   let isRateLimited = false;
 
-  for (let batchIndex = 0; batchIndex < MODEL_BATCHES.length; batchIndex++) {
-    const batch = MODEL_BATCHES[batchIndex];
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${activeApiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "https://safvan.ai",
-          "X-Title": "Safvan AI",
-        },
-        body: JSON.stringify({
-          models: batch,
-          messages,
-          stream: true,
-          temperature: 0.7,
-          max_tokens: 4096,
-        }),
-      });
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${activeApiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "https://safvan.ai",
+        "X-Title": "Safvan AI",
+      },
+      body: JSON.stringify({
+        model: MODEL_NAME,
+        messages,
+        stream: true,
+        temperature: 0.7,
+        max_tokens: 4096,
+      }),
+    });
 
-      if (!response.ok) {
-        const errBody = await response.text();
-        let errMsg = errBody;
-        try {
-          const json = JSON.parse(errBody) as { error?: { message?: string } };
-          errMsg = json.error?.message ?? errBody;
-        } catch {
-          // ignore
-        }
-
-        if (
-          response.status === 429 ||
-          response.status === 404 ||
-          response.status === 503 ||
-          errMsg.includes("429") ||
-          errMsg.includes("404") ||
-          errMsg.includes("rate limit") ||
-          errMsg.includes("No endpoints found")
-        ) {
-          if (response.status === 429 || errMsg.includes("rate limit")) {
-            isRateLimited = true;
-          }
-          console.warn(
-            `[Safvan AI] OpenRouter batch (${batch.join(", ")}) returned ${response.status}. Trying next model batch...`
-          );
-          lastErrorMsg = errMsg;
-          // Brief pause before trying next batch on 429 to clear rate-limiter window
-          if (response.status === 429 && batchIndex < MODEL_BATCHES.length - 1) {
-            await new Promise((r) => setTimeout(r, 1200));
-          }
-          continue; // Try next model batch
-        }
-
-        console.error(`[OpenRouter API Error] HTTP ${response.status}:`, errMsg);
-        lastErrorMsg = errMsg;
-        break;
+    if (!response.ok) {
+      const errBody = await response.text();
+      let errMsg = errBody;
+      try {
+        const json = JSON.parse(errBody) as { error?: { message?: string } };
+        errMsg = json.error?.message ?? errBody;
+      } catch {
+        // ignore
       }
 
-      if (!response.body) {
-        throw new Error("Response body is null");
+      if (response.status === 429 || errMsg.includes("rate limit")) {
+        isRateLimited = true;
       }
-
+      console.error(`[OpenRouter API Error] HTTP ${response.status}:`, errMsg);
+      lastErrorMsg = errMsg;
+    } else if (!response.body) {
+      throw new Error("Response body is null");
+    } else {
       // 6. Stream SSE tokens
       let accumulatedText = "";
       for await (const token of parseSSEStream(response.body)) {
@@ -348,16 +315,16 @@ export async function streamGeminiChat(
         if (cacheKey) setCached(cacheKey, accumulatedText);
         return accumulatedText;
       }
-    } catch (error: unknown) {
-      lastErrorMsg = error instanceof Error ? error.message : String(error);
-      console.warn(`[Safvan AI] Batch attempt error:`, lastErrorMsg);
     }
+  } catch (error: unknown) {
+    lastErrorMsg = error instanceof Error ? error.message : String(error);
+    console.warn(`[Safvan AI] OpenRouter request error:`, lastErrorMsg);
   }
 
-  // 7. Error fallback display if all model attempts failed
+  // 7. Error fallback display if request failed
   let errorMsg: string;
   if (isRateLimited || lastErrorMsg.includes("429") || lastErrorMsg.includes("rate limit")) {
-    errorMsg = "⚠️ **Rate limit reached.** The free AI models are currently receiving high traffic. Please wait 5–10 seconds and try sending your message again.";
+    errorMsg = "⚠️ **Rate limit reached.** The AI model is currently receiving high traffic. Please wait 5–10 seconds and try sending your message again.";
   } else if (lastErrorMsg.includes("401") || lastErrorMsg.includes("403") || lastErrorMsg.includes("API key")) {
     errorMsg = "⚠️ **Invalid API key.** Please check `VITE_OPENROUTER_API_KEY` in your `.env` file.";
   } else if (lastErrorMsg.includes("fetch") || lastErrorMsg.includes("network")) {

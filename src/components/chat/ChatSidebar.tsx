@@ -4,7 +4,6 @@ import {
   Plus,
   Search,
   MessageSquare,
-  Settings,
   LogOut,
   PanelLeftClose,
   X,
@@ -44,7 +43,6 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onLogout,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filteredHistory = chatHistory.filter((item) =>
@@ -55,7 +53,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     <>
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-[264px] flex flex-col shrink-0 overflow-hidden",
+          "fixed inset-y-0 left-0 z-40 w-[264px] h-full flex flex-col shrink-0 overflow-hidden",
           "border-r",
           "bg-[#F4ECE1] border-[#E7DCCC]",
           "dark:bg-[#1A1A1A] dark:border-[#2E2820]",
@@ -132,7 +130,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </div>
 
         {/* History Groups */}
-        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-2 py-2 space-y-4">
           {/* Guest session notice */}
           {isGuest && chatHistory.length > 0 && (
             <div
@@ -240,7 +238,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         {/* Account Row */}
         <div
           className={cn(
-            "p-3 border-t relative shrink-0",
+            "p-3 border-t shrink-0",
             "border-[#E7DCCC] bg-[#F4ECE1]",
             "dark:border-[#2E2820] dark:bg-[#1A1510]"
           )}
@@ -267,8 +265,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             </div>
           ) : (
             /* Logged-in user state */
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div className="w-8 h-8 rounded-full bg-[#1A1A1A] dark:bg-[#EDE8E1] text-[#FAF6F0] dark:text-[#1A1A1A] font-sans font-bold text-xs flex items-center justify-center shrink-0">
                   {userDisplayName ? userDisplayName.charAt(0).toUpperCase() : "U"}
                 </div>
@@ -281,38 +279,21 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   </span>
                 </div>
               </div>
-              <button
-                onClick={() => setSettingsOpen(!settingsOpen)}
-                className={cn(
-                  "p-1.5 rounded-lg transition-colors",
-                  "text-[#8A7E6C] hover:text-[#1A1A1A] hover:bg-[#EAD6C4]",
-                  "dark:text-[#6B6358] dark:hover:text-[#EDE8E1] dark:hover:bg-[#2E2820]"
-                )}
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {/* Settings Popover (only for logged-in users) */}
-          {!isGuest && settingsOpen && (
-            <div
-              className={cn(
-                "absolute bottom-16 left-3 right-3 rounded-xl shadow-lg p-1.5 z-50 border animate-fade-slide-up",
-                "bg-[#FAF6F0] border-[#E7DCCC]",
-                "dark:bg-[#1E1A15] dark:border-[#2E2820]"
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={() => onLogout()}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors",
+                    "text-[#C4552F] bg-[#C4552F]/10 hover:bg-[#C4552F]/20",
+                    "dark:text-[#D4663F] dark:bg-[#D4663F]/15 dark:hover:bg-[#D4663F]/25"
+                  )}
+                  title="Sign out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign out</span>
+                </button>
               )}
-            >
-              <button
-                onClick={() => {
-                  setSettingsOpen(false);
-                  if (onLogout) onLogout();
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-lg text-left text-[#C4552F] hover:bg-[#F4ECE1] dark:hover:bg-[#262019] font-medium transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign out
-              </button>
             </div>
           )}
         </div>
