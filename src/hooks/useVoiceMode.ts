@@ -1,5 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useSpeechRecognition } from "@/components/chat/useSpeechRecognition";
+import {
+  useSpeechRecognition,
+  cleanRecognizedSpeech,
+} from "@/components/chat/useSpeechRecognition";
 import { fetchOpenRouterTTS, cleanTextForSpeech } from "@/lib/ttsApi";
 
 export type VoiceStatus = "idle" | "listening" | "thinking" | "speaking";
@@ -41,19 +44,22 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
   const handleTranscript = useCallback(
     (text: string) => {
       if (status !== "listening" && status !== "idle") return;
-      latestTranscriptRef.current = text;
-      setUserTranscript(text);
+      const cleaned = cleanRecognizedSpeech(text);
+      if (!cleaned) return;
+
+      latestTranscriptRef.current = cleaned;
+      setUserTranscript(cleaned);
 
       // Reset silence timer on every new speech token
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
       }
 
-      // Auto-send user prompt after 1.5 seconds of silence when in voice mode
-      if (text.trim() && isOpen) {
+      // Auto-send user prompt after 1.4 seconds of silence when in voice mode
+      if (cleaned.trim() && isOpen) {
         silenceTimerRef.current = setTimeout(() => {
           triggerSendUserSpeech();
-        }, 1500);
+        }, 1400);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,13 +72,14 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
     error: speechError,
     startListening,
     stopListening,
+    resetTranscriptBuffer,
   } = useSpeechRecognition({
     onTranscript: handleTranscript,
   });
 
   // Function to submit current user speech to AI
   const triggerSendUserSpeech = useCallback(async () => {
-    const textToSend = latestTranscriptRef.current.trim();
+    const textToSend = cleanRecognizedSpeech(latestTranscriptRef.current);
     if (!textToSend || isProcessingRef.current) return;
 
     if (silenceTimerRef.current) {
@@ -82,6 +89,7 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
     isProcessingRef.current = true;
     stopListening();
     stopAudio();
+    resetTranscriptBuffer();
 
     setStatus("thinking");
     setAiResponseText("");
@@ -95,13 +103,14 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
       latestTranscriptRef.current = "";
       setUserTranscript("");
     }
-  }, [onSendMessage, stopListening, stopAudio]);
+  }, [onSendMessage, stopListening, stopAudio, resetTranscriptBuffer]);
 
   // When AI generation finishes while in voice mode, trigger OpenRouter TTS
   const playAiVoice = useCallback(
     async (textToSpeak: string) => {
       if (!textToSpeak.trim() || !isOpen) {
         setStatus("listening");
+        resetTranscriptBuffer();
         startListening();
         isProcessingRef.current = false;
         return;
@@ -118,6 +127,10 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
         audio.onended = () => {
           activeAudioRef.current = null;
           if (isOpen) {
+            setUserTranscript("");
+            setAiResponseText("");
+            latestTranscriptRef.current = "";
+            resetTranscriptBuffer();
             setStatus("listening");
             startListening();
           } else {
@@ -145,7 +158,7 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
       fallbackBrowserSpeech(textToSpeak);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isOpen, startListening, stopAudio]
+    [isOpen, startListening, stopAudio, resetTranscriptBuffer]
   );
 
   const fallbackBrowserSpeech = useCallback(
@@ -155,6 +168,10 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
         const plainText = cleanTextForSpeech(textToSpeak);
         if (!plainText) {
           if (isOpen) {
+            setUserTranscript("");
+            setAiResponseText("");
+            latestTranscriptRef.current = "";
+            resetTranscriptBuffer();
             setStatus("listening");
             startListening();
           }
@@ -165,6 +182,10 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
         const utterance = new SpeechSynthesisUtterance(plainText);
         utterance.onend = () => {
           if (isOpen) {
+            setUserTranscript("");
+            setAiResponseText("");
+            latestTranscriptRef.current = "";
+            resetTranscriptBuffer();
             setStatus("listening");
             startListening();
           } else {
@@ -174,6 +195,10 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
         };
         utterance.onerror = () => {
           if (isOpen) {
+            setUserTranscript("");
+            setAiResponseText("");
+            latestTranscriptRef.current = "";
+            resetTranscriptBuffer();
             setStatus("listening");
             startListening();
           }
@@ -183,13 +208,17 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
         window.speechSynthesis.speak(utterance);
       } else {
         if (isOpen) {
+          setUserTranscript("");
+          setAiResponseText("");
+          latestTranscriptRef.current = "";
+          resetTranscriptBuffer();
           setStatus("listening");
           startListening();
         }
         isProcessingRef.current = false;
       }
     },
-    [isOpen, startListening]
+    [isOpen, startListening, resetTranscriptBuffer]
   );
 
   // Watch for transition from isGenerating: true -> false to trigger TTS
@@ -212,8 +241,9 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
     latestTranscriptRef.current = "";
     isProcessingRef.current = false;
     stopAudio();
+    resetTranscriptBuffer();
     startListening();
-  }, [startListening, stopAudio]);
+  }, [startListening, stopAudio, resetTranscriptBuffer]);
 
   // Stop / Close Voice Mode
   const closeVoiceMode = useCallback(() => {
@@ -228,15 +258,20 @@ export function useVoiceMode({ onSendMessage, isGenerating }: UseVoiceModeProps)
     setAiResponseText("");
     latestTranscriptRef.current = "";
     isProcessingRef.current = false;
-  }, [stopAudio, stopListening]);
+    resetTranscriptBuffer();
+  }, [stopAudio, stopListening, resetTranscriptBuffer]);
 
   // User manually interrupts speaking AI audio
   const interruptSpeaking = useCallback(() => {
     stopAudio();
+    setUserTranscript("");
+    setAiResponseText("");
+    latestTranscriptRef.current = "";
+    resetTranscriptBuffer();
     setStatus("listening");
     startListening();
     isProcessingRef.current = false;
-  }, [startListening, stopAudio]);
+  }, [startListening, stopAudio, resetTranscriptBuffer]);
 
   return {
     isOpen,
