@@ -52,7 +52,7 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 pb-6 animate-fade-slide-in">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col items-center justify-center px-3 sm:px-4 pb-6 animate-fade-slide-in">
       {/* Hidden File Input */}
       <input
         type="file"

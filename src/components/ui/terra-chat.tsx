@@ -177,7 +177,7 @@ export default function TerraChatUI({
     <div
       className={cn(
         isDark ? "dark" : "",
-        "flex h-screen w-full overflow-hidden relative font-sans-body",
+        "flex h-screen h-[100dvh] w-full overflow-hidden relative font-sans-body",
         "bg-[#FAF6F0] text-[#1A1A1A]",
         "dark:bg-[#141210] dark:text-[#EDE8E1]",
         "animate-fade-slide-in",

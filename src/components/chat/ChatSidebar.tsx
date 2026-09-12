@@ -53,12 +53,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     <>
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-[264px] h-full flex flex-col shrink-0 overflow-hidden",
+          "fixed top-0 bottom-0 left-0 z-40 w-[264px] max-w-[85vw] h-full h-[100dvh] flex flex-col shrink-0 overflow-hidden",
           "border-r",
           "bg-[#F4ECE1] border-[#E7DCCC]",
           "dark:bg-[#1A1A1A] dark:border-[#2E2820]",
           "sidebar-drawer-transition",
-          "md:relative md:z-0",
+          "md:relative md:z-0 md:max-w-none",
           sidebarOpen
             ? "translate-x-0 md:ml-0 opacity-100 shadow-2xl md:shadow-none pointer-events-auto"
             : "-translate-x-full md:-ml-[264px] opacity-0 pointer-events-none"
@@ -130,7 +130,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </div>
 
         {/* History Groups */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-2 py-2 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-2 space-y-4">
           {/* Guest session notice */}
           {isGuest && chatHistory.length > 0 && (
             <div
@@ -238,7 +238,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         {/* Account Row */}
         <div
           className={cn(
-            "p-3 border-t shrink-0",
+            "p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t shrink-0 z-10",
             "border-[#E7DCCC] bg-[#F4ECE1]",
             "dark:border-[#2E2820] dark:bg-[#1A1510]"
           )}
@@ -282,16 +282,19 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
               {onLogout && (
                 <button
                   type="button"
-                  onClick={() => onLogout()}
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    onLogout();
+                  }}
                   className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors",
-                    "text-[#C4552F] bg-[#C4552F]/10 hover:bg-[#C4552F]/20",
-                    "dark:text-[#D4663F] dark:bg-[#D4663F]/15 dark:hover:bg-[#D4663F]/25"
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-colors whitespace-nowrap",
+                    "text-[#C4552F] bg-[#C4552F]/15 hover:bg-[#C4552F]/25 active:scale-95",
+                    "dark:text-[#D4663F] dark:bg-[#D4663F]/20 dark:hover:bg-[#D4663F]/30"
                   )}
                   title="Sign out"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign out</span>
+                  <LogOut className="w-3.5 h-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">Sign out</span>
                 </button>
               )}
             </div>
@@ -303,7 +306,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       <div
         onClick={() => setSidebarOpen(false)}
         className={cn(
-          "fixed inset-0 bg-black/40 backdrop-blur-[3px] z-30 md:hidden",
+          "fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden",
           "sidebar-backdrop-transition",
           sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
