@@ -41,6 +41,11 @@ export interface TerraChatProps {
   isGenerating?: boolean;
   placeholder?: string;
   showTopBar?: boolean;
+  showSidebar?: boolean;
+  showSidebarToggle?: boolean;
+  showVoiceMode?: boolean;
+  showTemporaryChat?: boolean;
+  showFeaturesPage?: boolean;
   className?: string;
   /** True when the user is not logged in — enables guest/temporary mode */
   isGuest?: boolean;

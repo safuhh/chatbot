@@ -26,6 +26,11 @@ export default function TerraChatUI({
   isGenerating = false,
   placeholder = "Reply to Safvan AI…",
   showTopBar = true,
+  showSidebar = true,
+  showSidebarToggle = true,
+  showVoiceMode = true,
+  showTemporaryChat = true,
+  showFeaturesPage = false,
   className,
   isGuest = false,
   userDisplayName,
@@ -66,7 +71,7 @@ export default function TerraChatUI({
   }, [isDark]);
 
   const [sidebarOpen, setSidebarOpen] = useState(
-    () => typeof window !== "undefined" && window.innerWidth >= 768
+    () => showSidebar && typeof window !== "undefined" && window.innerWidth >= 768
   );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -210,6 +215,12 @@ export default function TerraChatUI({
             isTemporaryMode={isTemporaryMode}
             onToggleTemporaryMode={onToggleTemporaryMode}
             onOpenVoiceMode={handleOpenVoiceMode}
+            showVoiceMode={showVoiceMode}
+            showTemporaryChat={showTemporaryChat}
+            showSidebarToggle={showSidebarToggle}
+            isGuest={isGuest}
+            userDisplayName={userDisplayName}
+            onLogout={onLogout}
           />
         )}
 
@@ -221,6 +232,7 @@ export default function TerraChatUI({
             isGenerating={isGenerating}
             placeholder={isTemporaryMode ? "Type a message in Temporary Chat…" : placeholder}
             isTemporaryMode={isTemporaryMode}
+            showFeaturesPage={showFeaturesPage}
           />
         ) : (
           <>

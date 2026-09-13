@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Attachment } from "./types";
 import { useAttachments } from "@/lib/useAttachments";
 import { AttachmentPreviewBar } from "./AttachmentPreviewBar";
+import ProductFeaturesPage from "@/pages/ProductFeaturesPage";
 
 interface ChatEmptyStateProps {
   inputMessage: string;
@@ -12,6 +13,7 @@ interface ChatEmptyStateProps {
   isGenerating: boolean;
   placeholder: string;
   isTemporaryMode?: boolean;
+  showFeaturesPage?: boolean;
 }
 
 export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
@@ -21,6 +23,7 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
   isGenerating,
   placeholder,
   isTemporaryMode = false,
+  showFeaturesPage = false,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,8 +54,11 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
     handleSend(currentAttachments);
   };
 
+  const shouldShowFeatures =
+    showFeaturesPage || (typeof window !== "undefined" && window.location.pathname === "/");
+
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col items-center justify-center px-3 sm:px-4 pb-6 animate-fade-slide-in">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col items-center px-3 sm:px-4 pb-12 animate-fade-slide-in">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -63,7 +69,13 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
         accept="image/*,text/*,application/json,application/pdf,.js,.jsx,.ts,.tsx,.py,.md,.csv,.html,.css"
       />
 
-      <div className="w-full max-w-[680px] flex flex-col items-center">
+      {/* Centered Chatbot Hero Section (100% viewport height minus topbar) */}
+      <div
+        className={cn(
+          "w-full max-w-[680px] flex flex-col items-center justify-center shrink-0",
+          shouldShowFeatures ? "min-h-[calc(100vh-5rem)] min-h-[calc(100dvh-5rem)] py-8" : "my-auto min-h-[80vh]"
+        )}
+      >
         {/* Heading & Subtitle */}
         <div className="text-center mb-6 sm:mb-8 px-2">
           <h2
@@ -163,6 +175,12 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({
           </p>
         </div>
       </div>
+
+      {shouldShowFeatures && (
+        <div className="w-full max-w-6xl mt-12 border-t border-[#E7DCCC]/60 dark:border-[#2E2820]/80 pt-8">
+          <ProductFeaturesPage isEmbedded={true} />
+        </div>
+      )}
     </div>
   );
 };

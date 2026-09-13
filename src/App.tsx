@@ -3,7 +3,7 @@ import { AuthProvider } from "@/lib/AuthContext";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import ChatApp from "./ChatApp";
-
+import ProductFeaturesPage from "./pages/ProductFeaturesPage";
 /**
  * Root component — sets up the auth context, router, and routes.
  *
@@ -18,11 +18,14 @@ export default function App() {
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<ChatApp showSidebar={false} showSidebarToggle={false} showVoiceMode={false} showTemporaryChat={false} showFeaturesPage={true} redirectOnSend={true} />} />
+          <Route path="/chat" element={<ChatApp showSidebar={true} showSidebarToggle={true} showVoiceMode={true} showTemporaryChat={true} />} />
+          <Route path="/c/:chatId" element={<ChatApp showSidebar={true} showSidebarToggle={true} showVoiceMode={true} showTemporaryChat={true} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/" element={<ChatApp />} />
-          <Route path="/c/:chatId" element={<ChatApp />} />
+          <Route path="/features" element={<ProductFeaturesPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </AuthProvider>
     </BrowserRouter>

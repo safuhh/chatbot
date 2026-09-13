@@ -13,6 +13,16 @@ import {
   saveMessage,
 } from "@/lib/chatApi";
 
+interface ChatAppProps {
+  showTopBar?: boolean;
+  showSidebar?: boolean;
+  showSidebarToggle?: boolean;
+  showVoiceMode?: boolean;
+  showTemporaryChat?: boolean;
+  showFeaturesPage?: boolean;
+  redirectOnSend?: boolean;
+}
+
 /**
  * ChatApp — Main chatbot experience.
  *
@@ -21,7 +31,15 @@ import {
  *  • Temporary mode (any user) → In-memory only; NOTHING written to Supabase.
  *  • Guest (not logged in)     → In-memory only via useGuestSession (sessionStorage).
  */
-export default function ChatApp() {
+export default function ChatApp({
+  showTopBar = true,
+  showSidebar = true,
+  showSidebarToggle = true,
+  showVoiceMode = true,
+  showTemporaryChat = true,
+  showFeaturesPage = false,
+  redirectOnSend = false,
+}: ChatAppProps = {}) {
   const { user, isGuest, logout } = useAuthContext();
   const { chatId: urlChatId } = useParams<{ chatId?: string }>();
   const navigate = useNavigate();
@@ -382,6 +400,11 @@ export default function ChatApp() {
     userText: string,
     attachments?: Attachment[]
   ): Promise<void> => {
+    // If sending from homepage or redirectOnSend is true, redirect automatically to dedicated /chat page
+    if (redirectOnSend || (typeof window !== "undefined" && window.location.pathname === "/")) {
+      navigate("/chat");
+    }
+
     // Temporary Chat — no auth check, no persistence
     if (isTemporaryMode) {
       await executeSendMessage(userText, true, attachments);
@@ -395,7 +418,7 @@ export default function ChatApp() {
       setPendingUserMessage(userText);
       setShowLoginModal(true);
     }
-  }, [isTemporaryMode, user, executeSendMessage]);
+  }, [isTemporaryMode, user, executeSendMessage, redirectOnSend, navigate]);
 
   // ── Regenerate handler ─────────────────────────────────────────────────────
   const handleRegenerate = useCallback(async (): Promise<void> => {
@@ -476,6 +499,12 @@ export default function ChatApp() {
         userDisplayName={user?.user_metadata?.full_name || user?.email || undefined}
         onLogout={logout}
         onDeleteChat={handleDeleteChat}
+        showTopBar={showTopBar}
+        showSidebar={showSidebar}
+        showSidebarToggle={showSidebarToggle}
+        showVoiceMode={showVoiceMode}
+        showTemporaryChat={showTemporaryChat}
+        showFeaturesPage={showFeaturesPage}
       />
 
       <LoginRequiredModal

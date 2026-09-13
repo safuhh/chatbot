@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   Menu,
   Sun,
@@ -7,6 +8,8 @@ import {
   PanelLeft,
   Shield,
   Headphones,
+  LogIn,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +22,12 @@ interface ChatHeaderProps {
   isTemporaryMode?: boolean;
   onToggleTemporaryMode?: (enabled: boolean) => void;
   onOpenVoiceMode?: () => void;
+  showVoiceMode?: boolean;
+  showTemporaryChat?: boolean;
+  showSidebarToggle?: boolean;
+  isGuest?: boolean;
+  userDisplayName?: string;
+  onLogout?: () => Promise<void>;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -30,6 +39,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isTemporaryMode = false,
   onToggleTemporaryMode,
   onOpenVoiceMode,
+  showVoiceMode = true,
+  showTemporaryChat = true,
+  showSidebarToggle = true,
+  isGuest = false,
+  userDisplayName,
+  onLogout,
 }) => {
   return (
     <header
@@ -43,22 +58,24 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     >
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Toggle Sidebar */}
-        <button
-          onClick={() => setSidebarOpen((prev) => !prev)}
-          className={cn(
-            "p-2 sm:p-1.5 rounded-lg shrink-0 transition-all duration-200 active:scale-90",
-            "text-[#8A7E6C] hover:text-[#1A1A1A] hover:bg-[#F4ECE1]",
-            "dark:text-[#9A8E80] dark:hover:text-[#EDE8E1] dark:hover:bg-[#1E1A15]"
-          )}
-          title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          {sidebarOpen ? (
-            <PanelLeftClose className="w-4 h-4 hidden md:block" />
-          ) : (
-            <PanelLeft className="w-4 h-4 hidden md:block" />
-          )}
-          <Menu className="w-4 h-4 md:hidden" />
-        </button>
+        {showSidebarToggle && (
+          <button
+            onClick={() => setSidebarOpen((prev) => !prev)}
+            className={cn(
+              "p-2 sm:p-1.5 rounded-lg shrink-0 transition-all duration-200 active:scale-90",
+              "text-[#8A7E6C] hover:text-[#1A1A1A] hover:bg-[#F4ECE1]",
+              "dark:text-[#9A8E80] dark:hover:text-[#EDE8E1] dark:hover:bg-[#1E1A15]"
+            )}
+            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {sidebarOpen ? (
+              <PanelLeftClose className="w-4 h-4 hidden md:block" />
+            ) : (
+              <PanelLeft className="w-4 h-4 hidden md:block" />
+            )}
+            <Menu className="w-4 h-4 md:hidden" />
+          </button>
+        )}
         <h1 className="font-sans font-semibold text-sm sm:text-base tracking-tight truncate text-[#1A1A1A] dark:text-[#EDE8E1]">
           {title}
         </h1>
@@ -66,7 +83,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
       <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
         {/* Voice Mode Button */}
-        {onOpenVoiceMode && (
+        {showVoiceMode && onOpenVoiceMode && (
           <button
             onClick={onOpenVoiceMode}
             title="Start Voice-to-Voice Mode (ChatGPT style)"
@@ -82,7 +99,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         )}
 
         {/* Temporary Chat Toggle Button */}
-        {onToggleTemporaryMode && (
+        {showTemporaryChat && onToggleTemporaryMode && (
           <button
             onClick={() => onToggleTemporaryMode(!isTemporaryMode)}
             title={isTemporaryMode ? "Disable Temporary Chat (Switch to Normal)" : "Enable Temporary Chat (Incognito / Unsaved)"}
@@ -112,6 +129,33 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
+
+        {/* Login / Logout Toggle Button */}
+        {!isGuest && onLogout && userDisplayName ? (
+          <button
+            onClick={() => onLogout()}
+            title={`Logged in as ${userDisplayName}. Click to Log out`}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border",
+              "bg-[#C4552F] hover:bg-[#A8421F] text-white border-[#C4552F] shadow-sm"
+            )}
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Log out</span>
+          </button>
+        ) : (
+          <Link
+            to="/login"
+            title="Log in to save conversations"
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all border",
+              "bg-[#C4552F] hover:bg-[#A8421F] text-white border-[#C4552F] shadow-sm"
+            )}
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Log in</span>
+          </Link>
+        )}
       </div>
     </header>
   );
